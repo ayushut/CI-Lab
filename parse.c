@@ -70,11 +70,39 @@ static node_t *build_leaf(void) {
         logging(LOG_FATAL, "failed to allocate node");
         return NULL;
     }
-    lef->tok = this_token->ttype;
     lef->node_type = NT_LEAF;
-    lef->type = INT_TYPE;
-    lef->val.ival = atoi(this_token->repr);
-    if(next_token->ttype != TOK_EOL){
+    lef->tok = this_token->ttype;
+    switch (lef->tok){
+        case TOK_NUM:
+            lef->val.ival = atoi(this_token->repr);
+            lef->type = INT_TYPE;
+            break;
+        case TOK_STR:
+            lef->val.sval = (char *) malloc(strlen(this_token->repr)+1);
+            strcpy(lef->val.sval, this_token->repr);
+            lef->type = STRING_TYPE;
+            break;
+        case TOK_TRUE:
+            lef->val.bval = true;
+            lef->type = BOOL_TYPE;
+            break;
+        case TOK_FALSE:
+            lef->val.bval = false;
+            lef->type = BOOL_TYPE;
+            break;
+        case TOK_FMT_SPEC:
+            lef->val.fval = this_token->repr[0];
+            lef->type = FMT_TYPE;
+            break;
+        case TOK_ID:
+            lef->val.sval = (char *) malloc(strlen(this_token->repr)+1);
+            strcpy(lef->val.sval, this_token->repr);    
+            lef->type = ID_TYPE;
+            break;       
+        default:
+            return lef;
+    }
+    if(next_token->ttype != TOK_EOL && next_token->ttype != TOK_SEP && next_token->ttype != TOK_FMT_SPEC && next_token->ttype != TOK_ASSIGN){
         advance_lexer();
     }
     return lef;
@@ -110,20 +138,26 @@ static node_t *build_exp(void) {
             logging(LOG_FATAL, "failed to allocate node");
             return NULL;
         }
-        internal->node_type = NT_INTERNAL;
-        internal->type = NO_TYPE;
         if(this_token->ttype == TOK_LPAREN){
-            internal->tok = this_token->ttype;
+            internal->node_type = NT_INTERNAL;
             advance_lexer();
-            internal->children[0] = build_exp();
-        }
-        if(this_token->ttype == TOK_PLUS){
-            internal->tok = this_token->ttype;
-            advance_lexer();
-            internal->children[1] = build_exp();
-        }
-        if(this_token->ttype == TOK_RPAREN){
-            if(next_token->ttype != TOK_EOL){
+
+            if(this_token->ttype == TOK_NOT || this_token->ttype == TOK_UMINUS){
+                internal->tok = this_token->ttype;
+                advance_lexer();
+                internal->children[0] = build_exp();
+            }
+            else{
+                internal->children[0] = build_exp();
+                internal->tok = this_token->ttype;
+                advance_lexer();
+                internal->children[1] = build_exp();
+                if(this_token->ttype == TOK_COLON){
+                    advance_lexer();
+                    internal->children[2] = build_exp();
+                }
+            }
+            if(next_token->ttype != TOK_EOL && next_token->ttype != TOK_SEP && next_token->ttype != TOK_FMT_SPEC){
                 advance_lexer();
             }
         }
