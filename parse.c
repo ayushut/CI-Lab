@@ -74,6 +74,9 @@ static node_t *build_leaf(void) {
     lef->tok = this_token->ttype;
     switch (lef->tok){
         case TOK_NUM:
+            if(next_token->ttype == TOK_NUM){
+                handle_error(ERR_SYNTAX);
+            }
             lef->val.ival = atoi(this_token->repr);
             lef->type = INT_TYPE;
             break;
@@ -141,13 +144,12 @@ static node_t *build_exp(void) {
         if(this_token->ttype == TOK_LPAREN){
             internal->node_type = NT_INTERNAL;
             advance_lexer();
-
             if(this_token->ttype == TOK_NOT || this_token->ttype == TOK_UMINUS){
                 internal->tok = this_token->ttype;
                 advance_lexer();
                 internal->children[0] = build_exp();
             }
-            else{
+            else if(this_token->ttype == TOK_ID || this_token->ttype == TOK_STR || this_token->ttype == TOK_NUM || this_token->ttype == TOK_FALSE || this_token->ttype == TOK_TRUE){
                 internal->children[0] = build_exp();
                 internal->tok = this_token->ttype;
                 advance_lexer();
@@ -157,10 +159,39 @@ static node_t *build_exp(void) {
                     internal->children[2] = build_exp();
                 }
             }
+            else{
+                handle_error(ERR_SYNTAX);
+            }
             if(next_token->ttype != TOK_EOL && next_token->ttype != TOK_SEP && next_token->ttype != TOK_FMT_SPEC){
                 advance_lexer();
             }
         }
+        // while (next_token->ttype != TOK_EOL && next_token->ttype != TOK_FMT_SPEC){
+        //     if(this_token->ttype == TOK_LPAREN){
+        //         lpcount++;
+        //         if(next_token->ttype == TOK_RPAREN){
+        //             handle_error(ERR_SYNTAX);
+        //         }
+        //         internal->node_type = NT_INTERNAL;
+        //         advance_lexer();
+        //     }
+        //     else if(this_token->ttype == TOK_RPAREN){
+        //         return internal;
+        //     }
+        //     else if(this_token->ttype == TOK_NOT || this_token->ttype == TOK_UMINUS){
+        //         internal->tok = this_token->ttype;
+        //         advance_lexer();
+        //         if(this_token->ttype == TOK_NUM || this_token->ttype == TOK_STR || this_token->ttype == TOK_TRUE || this_token->ttype == TOK_FALSE || this_token->ttype == TOK_ID){
+        //             internal->children[0] = build_exp();
+        //         }else{
+        //             handle_error(ERR_SYNTAX);
+        //         }
+        //     }
+            
+        // }
+        // if(lpcount != rpcount){
+        //     handle_error(ERR_SYNTAX);
+        // }
         return internal;
     }
 }

@@ -33,6 +33,9 @@ static void infer_type(node_t *nptr)
     {
         if(nptr->type == ID_TYPE){
             entry_t* ent = get(nptr->val.sval);
+            if(ent == NULL){
+                handle_error(ERR_UNDEFINED);
+            }
             nptr->type = ent->type;
             if(nptr->type == INT_TYPE){
                 nptr->val.ival = ent->val.ival;
