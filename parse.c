@@ -140,16 +140,19 @@ static node_t *build_exp(void) {
         // calloc returns NULL if memory allocation fails
             logging(LOG_FATAL, "failed to allocate node");
             return NULL;
-        }
+        } 
         if(this_token->ttype == TOK_LPAREN){
             internal->node_type = NT_INTERNAL;
             advance_lexer();
-            if(this_token->ttype == TOK_NOT || this_token->ttype == TOK_UMINUS){
+            if(next_token->ttype == TOK_RPAREN){
+                internal = build_leaf();
+            }
+            else if(this_token->ttype == TOK_NOT || this_token->ttype == TOK_UMINUS){
                 internal->tok = this_token->ttype;
                 advance_lexer();
                 internal->children[0] = build_exp();
             }
-            else if(this_token->ttype == TOK_ID || this_token->ttype == TOK_STR || this_token->ttype == TOK_NUM || this_token->ttype == TOK_FALSE || this_token->ttype == TOK_TRUE){
+            else {
                 internal->children[0] = build_exp();
                 internal->tok = this_token->ttype;
                 advance_lexer();
@@ -158,43 +161,20 @@ static node_t *build_exp(void) {
                     advance_lexer();
                     internal->children[2] = build_exp();
                 }
-            }
-            else{
+            }if(this_token->ttype != TOK_RPAREN){
                 handle_error(ERR_SYNTAX);
             }
             if(next_token->ttype != TOK_EOL && next_token->ttype != TOK_SEP && next_token->ttype != TOK_FMT_SPEC){
                 advance_lexer();
             }
         }
-        // while (next_token->ttype != TOK_EOL && next_token->ttype != TOK_FMT_SPEC){
-        //     if(this_token->ttype == TOK_LPAREN){
-        //         lpcount++;
-        //         if(next_token->ttype == TOK_RPAREN){
-        //             handle_error(ERR_SYNTAX);
-        //         }
-        //         internal->node_type = NT_INTERNAL;
-        //         advance_lexer();
-        //     }
-        //     else if(this_token->ttype == TOK_RPAREN){
-        //         return internal;
-        //     }
-        //     else if(this_token->ttype == TOK_NOT || this_token->ttype == TOK_UMINUS){
-        //         internal->tok = this_token->ttype;
-        //         advance_lexer();
-        //         if(this_token->ttype == TOK_NUM || this_token->ttype == TOK_STR || this_token->ttype == TOK_TRUE || this_token->ttype == TOK_FALSE || this_token->ttype == TOK_ID){
-        //             internal->children[0] = build_exp();
-        //         }else{
-        //             handle_error(ERR_SYNTAX);
-        //         }
-        //     }
-            
-        // }
-        // if(lpcount != rpcount){
-        //     handle_error(ERR_SYNTAX);
-        // }
+        else{
+            handle_error(ERR_SYNTAX);
+        }
         return internal;
     }
 }
+
 
 /* build_root() - construct the root of the AST for the current input
  * This function is provided to you. Use it as a reference for your code
